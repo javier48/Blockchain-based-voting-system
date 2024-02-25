@@ -1,0 +1,2340 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<style>
+		#main {
+			border: 1px;
+			display: flex;
+			align-items: center;
+			/* Vertical align the elements to the center */
+		}
+
+		h1 {
+			margin: 0;
+		}
+
+		button {
+			margin-left: auto;
+			/* Push this element to the right */
+		}
+
+		table {
+			font-family: arial, sans-serif;
+			border-collapse: collapse;
+			width: 60%;
+		}
+
+		td,
+		th {
+			border: 1px solid #dddddd;
+			text-align: left;
+			padding: 10px;
+		}
+
+		tr:nth-child(even) {
+			background-color: #dddddd;
+		}
+	</style>
+</head>
+
+<body>
+	<div id="main">
+		<h1>Vote</h1>
+		<button id="connect-button">Log Out</button>
+	</div>
+	<table class='' "table">
+		<thead>
+			<tr>
+				<th scope="col">Candidates</th>
+				<th scope="col" id="cad1"></th>
+				<th scope="col" id="cad2"></th>
+			</tr>
+		</thead>
+		<tbody>
+
+			<tr>
+				<th scope='' "row"></th>
+				<td>
+					<button id='vote1'>Vote</button>
+				</td>
+				<td>
+					<button id='vote2'>Vote</button>
+				</td>
+			</tr>
+		</tbody>
+	</table>
+	<br>
+	<label>User ID :</label>
+	<label id="address"></label><br>
+
+	<br><br>
+
+	<h1>Voting Result</h1>
+		<label>Total Ballot :</label>
+		<label id="totalballot"></label><br>
+		<label>Cat :</label>
+		<label id="totalcat"></label><br>
+		<label>Dog :</label>
+		<label id="totaldog"></label><br><br>
+
+		<button id='count'>Count/tally</button><br><br>
+
+		<button id='fetch'>Fetch Data</button><br><br>
+
+		<table border="1">
+			<thead>
+				<tr>
+					<th>UID</th>
+					<th>Vote For Encrypted</th>
+				</tr>
+			</thead>
+			<tbody id="tableBody">
+
+
+	<script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js@1.0.0-beta.36/dist/web3.min.js"></script>
+	<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/core.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/sha256.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/aes.js"
+		integrity="sha256-/H4YS+7aYb9kJ5OKhFYPUjSJdrtV6AeyJOtTkw6X72o=" crossorigin="anonymous"></script>
+	<script src="https://cdn.jsdelivr.net/npm/paillier-bigint@3.4.3/dist/bundle.umd.min.js"></script>
+	<script>
+		var contract;
+		$(document).ready(function () {
+			web3 = new Web3(web3.currentProvider);
+			var address = "0x9EC9C1FFbcfF08B49d6201CE935811fa015eF658"; //Replace with your deployed smart contract address here
+			var abi = [
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_name",
+				"type": "string"
+			}
+		],
+		"name": "addCandidate",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "_messageHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "uint8",
+				"name": "_v",
+				"type": "uint8"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "_r",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "_s",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "string",
+				"name": "_logaddr",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "_passwordReal",
+				"type": "string"
+			}
+		],
+		"name": "createUser",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"inputs": [],
+		"name": "ECDSAInvalidSignature",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "length",
+				"type": "uint256"
+			}
+		],
+		"name": "ECDSAInvalidSignatureLength",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "s",
+				"type": "bytes32"
+			}
+		],
+		"name": "ECDSAInvalidSignatureS",
+		"type": "error"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "logaddr",
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "passwordReal",
+				"type": "string"
+			}
+		],
+		"name": "userCreated",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "_messageHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "uint8",
+				"name": "_v",
+				"type": "uint8"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "_r",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "_s",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_votecondition",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_candidateid",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_vid",
+				"type": "uint256"
+			},
+			{
+				"internalType": "string",
+				"name": "_voteraddr",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_AddressInt",
+				"type": "uint256"
+			}
+		],
+		"name": "vote",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "Ballotaddrints",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "addr",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "ballots",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "addr",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "votefor",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "condition",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "ballotvids",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "addr",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "votefor",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "candidatecount",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "candidates",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "id",
+				"type": "uint256"
+			},
+			{
+				"internalType": "string",
+				"name": "name",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_logaddr",
+				"type": "string"
+			}
+		],
+		"name": "getaddr",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_votercount",
+				"type": "uint256"
+			}
+		],
+		"name": "getcondition",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_candidateid",
+				"type": "uint256"
+			}
+		],
+		"name": "getid",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_candidateid",
+				"type": "uint256"
+			}
+		],
+		"name": "getname",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_logaddr",
+				"type": "string"
+			}
+		],
+		"name": "getpasswordReal",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_votercount",
+				"type": "uint256"
+			}
+		],
+		"name": "getvotefor",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_AddressInt",
+				"type": "uint256"
+			}
+		],
+		"name": "getvoteforint",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_vid",
+				"type": "uint256"
+			}
+		],
+		"name": "getvoteforvid",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_votercount",
+				"type": "uint256"
+			}
+		],
+		"name": "getvoter",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_vid",
+				"type": "uint256"
+			}
+		],
+		"name": "getvotervid",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "userCount",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"name": "usersList",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "logaddr",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "passwordReal",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "messageHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "uint8",
+				"name": "v",
+				"type": "uint8"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "r",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "s",
+				"type": "bytes32"
+			}
+		],
+		"name": "verifySignature",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "pure",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "voter",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "votercount",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+];
+			contract = new web3.eth.Contract(abi, address);
+
+			contract.methods.getid(0).call().then(function (id) { $('#id').html(id); })
+			contract.methods.getname(0).call().then(function (name) { $('#cad1').html(name); })
+
+			contract.methods.getid(1).call().then(function (id) { $('#id').html(id); })
+			contract.methods.getname(1).call().then(function (name) { $('#cad2').html(name); })
+
+			var logSession = localStorage.getItem("logsession");
+			if (logSession == "false") {
+				window.location.href = "http://localhost:8080/";
+				alert("Please log in to continue!");
+			}
+			var valAddress = localStorage.getItem("textvalue");
+			document.getElementById("address").innerHTML = valAddress;
+			var valVID = localStorage.getItem("vidvalue");
+
+			//contract.methods.getvid(valVID).call().then(function(id){$('#vid').html(id);})
+		})
+		$('#connect-button').click(function () {
+			var isloggedin = false;
+			localStorage.setItem("logsession", isloggedin);
+			window.location.href = "http://localhost:8080/";
+		})
+
+		$('#vote1').click(function () {
+			const startTime = performance.now();
+
+			var passCheck = localStorage.getItem("passcheck");
+			var valAddress = localStorage.getItem("textvalue");
+			var vid = Math.floor(Math.random() * 100000000) + 1;
+			//localStorage.setItem("vidvalue",vid);
+
+			window.ethereum.enable();
+
+			//AES encryption
+			var key = '>+s=@40cd<09]{d6J/?1K';
+			var marktrue = ".";
+			var marfalse = ",";
+
+			if (passCheck == "true") {
+				var addrplus = valAddress + marktrue;
+			}
+			else {
+				var addrplus = valAddress + marfalse;
+			}
+			var encryptedUID = CryptoJS.AES.encrypt(addrplus, key).toString();
+			console.log("addrplus: ", addrplus);
+			console.log("Encrypt: ", encryptedUID);
+
+			//Hashing SHA256
+			var salt = "}[Jj3!@?Mo|-ID+=*)%";
+			const AddressIntplusSalt = valAddress + salt;
+			var AddressIntHashed = CryptoJS.SHA256(AddressIntplusSalt) + "";
+			console.log("User ID: ", valAddress);
+			console.log("AddressIntHashed: ", AddressIntHashed);
+
+			//convertion to INT
+			var AddressInt = 0;
+			for (let i = 0; i < AddressIntHashed.length; i++) {
+				AddressInt = AddressInt + AddressIntHashed.charCodeAt(i);
+			} console.log("AddressInt: ", AddressInt);
+
+			const ethers = window.ethers;
+
+			// ECDSA
+			function makeid(length) {
+				let result = '';
+				const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+				const charactersLength = characters.length;
+				let counter = 0;
+				while (counter < length) {
+					result += characters.charAt(Math.floor(Math.random() * charactersLength));
+					counter += 1;
+				}
+				return result;
+			}
+
+			const signature = web3.eth.accounts.sign(makeid(32), '0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318');
+																//0x2c7536E3605D9C16a7a3D7b1898e529396a65c23
+			const message = signature.messageHash;
+			const v = signature.v;
+			const r = signature.r;
+			const s = signature.s;
+			const sign = signature.signature;
+
+			//paillier cryptosystem
+			// Function to retrieve or generate Paillier keys
+			async function getKeys() {
+				const storedKeys = JSON.parse(localStorage.getItem('paillierKeys'));
+
+				if (!storedKeys || !storedKeys.publicKey || !storedKeys.privateKey) {
+					// Generate new keys and store them in local storage
+					const { publicKey, privateKey } = await paillierBigint.generateRandomKeys(128);
+
+					// Convert BigInts to strings before storing
+					const serializedKeys = {
+						publicKey: {
+							n: publicKey.n.toString(),
+							g: publicKey.g.toString()
+						},
+						privateKey: {
+							lambda: privateKey.lambda.toString(),
+							mu: privateKey.mu.toString(),
+							p: privateKey._p.toString(),
+							q: privateKey._q.toString(),
+						}
+					};
+
+					localStorage.setItem('paillierKeys', JSON.stringify(serializedKeys));
+					return serializedKeys;
+				}
+
+				// Convert string values back to BigInts
+				storedKeys.publicKey = new paillierBigint.PublicKey(
+					BigInt(storedKeys.publicKey.n),
+					BigInt(storedKeys.publicKey.g)
+				);
+
+				storedKeys.privateKey = new paillierBigint.PrivateKey(
+					BigInt(storedKeys.privateKey.lambda),
+					BigInt(storedKeys.privateKey.mu),
+					storedKeys.publicKey,
+					BigInt(storedKeys.privateKey.p),
+					BigInt(storedKeys.privateKey.q)
+				);
+
+				console.log('Public key:', storedKeys.publicKey);
+				console.log('Private key:', storedKeys.privateKey);
+
+				return storedKeys;
+			}
+
+			// Function to execute the Paillier encryption and decryption
+
+			var cipcondition;
+			var cipvotecandidate;
+			async function executePaillier() {
+				try {
+					if (passCheck == "true") {
+						var condition = 0;
+					}
+					else {
+						var condition = 1;
+					}
+					var votecandidate = 0;
+
+					// Load or generate keys
+					const { publicKey, privateKey } = await getKeys();
+
+					if (publicKey && privateKey) {
+						cipcondition = publicKey.encrypt(condition).toString();
+						cipvotecandidate = publicKey.encrypt(votecandidate).toString();
+
+						//console.log('Condition:', cipcondition);
+						//console.log('Vote For:', cipvotecandidate);
+					} else {
+						console.error('Failed to load or generate keys.');
+					}
+				} catch (error) {
+					console.error('Error during Paillier execution:', error);
+				}
+
+				const endTime = performance.now(); const encryptionTime = endTime - startTime; console.log(`time: `, encryptionTime);
+
+				web3.eth.getAccounts().then(function (accounts) {
+					var acc = accounts[0];
+
+					contract.methods.getvoteforint(AddressInt).call().then(function (votefor) {
+						//AES Decryption
+						var key = '>+s=@40cd<09]{d6J/?1K';
+						var id = CryptoJS.AES.decrypt(votefor, key).toString(CryptoJS.enc.Utf8);
+
+						if (passCheck == "true") {
+							if (id == valAddress + ".") {
+								alert("You have voted!");
+							}
+							else {
+								console.log('Condition:', cipcondition);
+								console.log('Vote For:', cipvotecandidate);
+								console.log('VID:', vid);
+								console.log('UID:', encryptedUID);
+								console.log('UIDINT:', AddressInt);
+
+								return contract.methods.vote(message, v, r, s, cipcondition, cipvotecandidate, vid, encryptedUID, AddressInt).send({ from: acc });
+							}
+						}
+						else {
+							if (id == valAddress + ",") {
+								alert("You have voted!");
+							}
+							else {
+								console.log('Condition:', cipcondition);
+								console.log('Vote For:', cipvotecandidate);
+								console.log('VID:', vid);
+								console.log('UID:', encryptedUID);
+								console.log('UIDINT:', AddressInt);
+
+								return contract.methods.vote(message, v, r, s, cipcondition, cipvotecandidate, vid, encryptedUID, AddressInt).send({ from: acc });
+							}
+						}
+
+
+					})
+				}).then(function (tx) {
+					console.log(tx);
+				}).catch(function (tx) {
+					console.log(tx);
+				})
+
+			}
+			executePaillier();
+			
+		})
+
+		$('#vote2').click(function () {
+
+			var passCheck = localStorage.getItem("passcheck");
+			var valAddress = localStorage.getItem("textvalue");
+			var vid = Math.floor(Math.random() * 100000000) + 1;
+			//localStorage.setItem("vidvalue",vid);
+
+			window.ethereum.enable();
+
+			//AES encryption
+			var key = '>+s=@40cd<09]{d6J/?1K';
+			var marktrue = ".";
+			var marfalse = ",";
+
+			if (passCheck == "true") {
+				var addrplus = valAddress + marktrue;
+			}
+			else {
+				var addrplus = valAddress + marfalse;
+			}
+			var encryptedUID = CryptoJS.AES.encrypt(addrplus, key).toString();
+			console.log("addrplus: ", addrplus);
+			console.log("Encrypt: ", encryptedUID);
+
+			//Hashing SHA256
+			var salt = "}[Jj3!@?Mo|-ID+=*)%";
+			const AddressIntplusSalt = valAddress + salt;
+			var AddressIntHashed = CryptoJS.SHA256(AddressIntplusSalt) + "";
+			console.log("User ID: ", valAddress);
+			console.log("AddressIntHashed: ", AddressIntHashed);
+
+			//convertion to INT
+			var AddressInt = 0;
+			for (let i = 0; i < AddressIntHashed.length; i++) {
+				AddressInt = AddressInt + AddressIntHashed.charCodeAt(i);
+			} console.log("AddressInt: ", AddressInt);
+
+			const ethers = window.ethers;
+
+			// ECDSA
+			function makeid(length) {
+				let result = '';
+				const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+				const charactersLength = characters.length;
+				let counter = 0;
+				while (counter < length) {
+					result += characters.charAt(Math.floor(Math.random() * charactersLength));
+					counter += 1;
+				}
+				return result;
+			}
+
+			const signature = web3.eth.accounts.sign(makeid(32), '0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318');
+			const message = signature.messageHash;
+			const v = signature.v;
+			const r = signature.r;
+			const s = signature.s;
+			const sign = signature.signature;
+
+			//paillier cryptosystem
+			// Function to retrieve or generate Paillier keys
+			async function getKeys() {
+				const storedKeys = JSON.parse(localStorage.getItem('paillierKeys'));
+
+				if (!storedKeys || !storedKeys.publicKey || !storedKeys.privateKey) {
+					// Generate new keys and store them in local storage
+					const { publicKey, privateKey } = await paillierBigint.generateRandomKeys(128);
+
+					// Convert BigInts to strings before storing
+					const serializedKeys = {
+						publicKey: {
+							n: publicKey.n.toString(),
+							g: publicKey.g.toString()
+						},
+						privateKey: {
+							lambda: privateKey.lambda.toString(),
+							mu: privateKey.mu.toString(),
+							p: privateKey._p.toString(),
+							q: privateKey._q.toString(),
+						}
+					};
+
+					localStorage.setItem('paillierKeys', JSON.stringify(serializedKeys));
+					return serializedKeys;
+				}
+
+				// Convert string values back to BigInts
+				storedKeys.publicKey = new paillierBigint.PublicKey(
+					BigInt(storedKeys.publicKey.n),
+					BigInt(storedKeys.publicKey.g)
+				);
+
+				storedKeys.privateKey = new paillierBigint.PrivateKey(
+					BigInt(storedKeys.privateKey.lambda),
+					BigInt(storedKeys.privateKey.mu),
+					storedKeys.publicKey,
+					BigInt(storedKeys.privateKey.p),
+					BigInt(storedKeys.privateKey.q)
+				);
+
+				console.log('Public key:', storedKeys.publicKey);
+				console.log('Private key:', storedKeys.privateKey);
+
+				return storedKeys;
+			}
+
+			// Function to execute the Paillier encryption and decryption
+			var cipcondition;
+			var cipvotecandidate;
+			async function executePaillier() {
+				try {
+					if (passCheck == "true") {
+						var condition = 0;
+					}
+					else {
+						var condition = 1;
+					}
+					var votecandidate = 1;
+
+					// Load or generate keys
+					const { publicKey, privateKey } = await getKeys();
+
+					if (publicKey && privateKey) {
+						cipcondition = publicKey.encrypt(condition).toString();
+						cipvotecandidate = publicKey.encrypt(votecandidate).toString();
+
+						//console.log('Condition:', cipcondition);
+						//console.log('Vote For:', cipvotecandidate);
+					} else {
+						console.error('Failed to load or generate keys.');
+					}
+				} catch (error) {
+					console.error('Error during Paillier execution:', error);
+				}
+
+				web3.eth.getAccounts().then(function (accounts) {
+					var acc = accounts[0];
+
+					contract.methods.getvoteforint(AddressInt).call().then(function (votefor) {
+						//AES Decryption
+						var key = '>+s=@40cd<09]{d6J/?1K';
+						var id = CryptoJS.AES.decrypt(votefor, key).toString(CryptoJS.enc.Utf8);
+
+						if (passCheck == "true") {
+							if (id == valAddress + ".") {
+								alert("You have voted!");
+							}
+							else {
+								console.log('Condition:', cipcondition);
+								console.log('Vote For:', cipvotecandidate);
+								console.log('VID:', vid);
+								console.log('UID:', encryptedUID);
+								console.log('UIDINT:', AddressInt);
+
+								return contract.methods.vote(message, v, r, s, cipcondition, cipvotecandidate, vid, encryptedUID, AddressInt).send({ from: acc });
+							}
+						}
+						else {
+							if (id == valAddress + ",") {
+								alert("You have voted!");
+							}
+							else {
+								console.log('Condition:', cipcondition);
+								console.log('Vote For:', cipvotecandidate);
+								console.log('VID:', vid);
+								console.log('UID:', encryptedUID);
+								console.log('UIDINT:', AddressInt);
+
+								return contract.methods.vote(message, v, r, s, cipcondition, cipvotecandidate, vid, encryptedUID, AddressInt).send({ from: acc });
+							}
+						}
+
+					})
+				}).then(function (tx) {
+					console.log(tx);
+				}).catch(function (tx) {
+					console.log(tx);
+				})
+
+			}
+			executePaillier();
+			
+		})
+
+		$('#fetch').click(function () {
+			web3 = new Web3(web3.currentProvider);
+			var address = "0x9EC9C1FFbcfF08B49d6201CE935811fa015eF658"; //Replace with your deployed smart contract address here
+			var abi = [
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_name",
+				"type": "string"
+			}
+		],
+		"name": "addCandidate",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "_messageHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "uint8",
+				"name": "_v",
+				"type": "uint8"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "_r",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "_s",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "string",
+				"name": "_logaddr",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "_passwordReal",
+				"type": "string"
+			}
+		],
+		"name": "createUser",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"inputs": [],
+		"name": "ECDSAInvalidSignature",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "length",
+				"type": "uint256"
+			}
+		],
+		"name": "ECDSAInvalidSignatureLength",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "s",
+				"type": "bytes32"
+			}
+		],
+		"name": "ECDSAInvalidSignatureS",
+		"type": "error"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "logaddr",
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "passwordReal",
+				"type": "string"
+			}
+		],
+		"name": "userCreated",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "_messageHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "uint8",
+				"name": "_v",
+				"type": "uint8"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "_r",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "_s",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_votecondition",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_candidateid",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_vid",
+				"type": "uint256"
+			},
+			{
+				"internalType": "string",
+				"name": "_voteraddr",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_AddressInt",
+				"type": "uint256"
+			}
+		],
+		"name": "vote",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "Ballotaddrints",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "addr",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "ballots",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "addr",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "votefor",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "condition",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "ballotvids",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "addr",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "votefor",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "candidatecount",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "candidates",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "id",
+				"type": "uint256"
+			},
+			{
+				"internalType": "string",
+				"name": "name",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_logaddr",
+				"type": "string"
+			}
+		],
+		"name": "getaddr",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_votercount",
+				"type": "uint256"
+			}
+		],
+		"name": "getcondition",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_candidateid",
+				"type": "uint256"
+			}
+		],
+		"name": "getid",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_candidateid",
+				"type": "uint256"
+			}
+		],
+		"name": "getname",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_logaddr",
+				"type": "string"
+			}
+		],
+		"name": "getpasswordReal",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_votercount",
+				"type": "uint256"
+			}
+		],
+		"name": "getvotefor",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_AddressInt",
+				"type": "uint256"
+			}
+		],
+		"name": "getvoteforint",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_vid",
+				"type": "uint256"
+			}
+		],
+		"name": "getvoteforvid",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_votercount",
+				"type": "uint256"
+			}
+		],
+		"name": "getvoter",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_vid",
+				"type": "uint256"
+			}
+		],
+		"name": "getvotervid",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "userCount",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"name": "usersList",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "logaddr",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "passwordReal",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "messageHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "uint8",
+				"name": "v",
+				"type": "uint8"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "r",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "s",
+				"type": "bytes32"
+			}
+		],
+		"name": "verifySignature",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "pure",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "voter",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "votercount",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+];
+			contract = new web3.eth.Contract(abi, address);
+
+			async function executeFetch(_i) {
+
+				contract.methods.getvotefor(_i).call().then(function (votefor) {
+					const tableBody = document.getElementById('tableBody');
+					const newRow = tableBody.insertRow();
+					const cell1 = newRow.insertCell(0);
+					const cell2 = newRow.insertCell(1);
+
+					cell2.innerHTML = votefor;
+
+					contract.methods.getvoter(_i).call().then(function (_id) {
+						cell1.innerHTML = _id;
+					})
+				})
+			}
+			contract.methods.votercount().call().then(function (votercount) {
+				for (let i = 1; i <= votercount; i++) {
+					executeFetch(i);
+				}
+			})
+		})
+
+		$('#count').click(function () {
+			web3 = new Web3(web3.currentProvider);
+			var address = "0x9EC9C1FFbcfF08B49d6201CE935811fa015eF658"; //Replace with your deployed smart contract address here
+			var abi = [
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_name",
+				"type": "string"
+			}
+		],
+		"name": "addCandidate",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "_messageHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "uint8",
+				"name": "_v",
+				"type": "uint8"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "_r",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "_s",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "string",
+				"name": "_logaddr",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "_passwordReal",
+				"type": "string"
+			}
+		],
+		"name": "createUser",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"inputs": [],
+		"name": "ECDSAInvalidSignature",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "length",
+				"type": "uint256"
+			}
+		],
+		"name": "ECDSAInvalidSignatureLength",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "s",
+				"type": "bytes32"
+			}
+		],
+		"name": "ECDSAInvalidSignatureS",
+		"type": "error"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "logaddr",
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "passwordReal",
+				"type": "string"
+			}
+		],
+		"name": "userCreated",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "_messageHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "uint8",
+				"name": "_v",
+				"type": "uint8"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "_r",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "_s",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_votecondition",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_candidateid",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_vid",
+				"type": "uint256"
+			},
+			{
+				"internalType": "string",
+				"name": "_voteraddr",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_AddressInt",
+				"type": "uint256"
+			}
+		],
+		"name": "vote",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "Ballotaddrints",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "addr",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "ballots",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "addr",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "votefor",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "condition",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "ballotvids",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "addr",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "votefor",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "candidatecount",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "candidates",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "id",
+				"type": "uint256"
+			},
+			{
+				"internalType": "string",
+				"name": "name",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_logaddr",
+				"type": "string"
+			}
+		],
+		"name": "getaddr",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_votercount",
+				"type": "uint256"
+			}
+		],
+		"name": "getcondition",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_candidateid",
+				"type": "uint256"
+			}
+		],
+		"name": "getid",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_candidateid",
+				"type": "uint256"
+			}
+		],
+		"name": "getname",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_logaddr",
+				"type": "string"
+			}
+		],
+		"name": "getpasswordReal",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_votercount",
+				"type": "uint256"
+			}
+		],
+		"name": "getvotefor",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_AddressInt",
+				"type": "uint256"
+			}
+		],
+		"name": "getvoteforint",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_vid",
+				"type": "uint256"
+			}
+		],
+		"name": "getvoteforvid",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_votercount",
+				"type": "uint256"
+			}
+		],
+		"name": "getvoter",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_vid",
+				"type": "uint256"
+			}
+		],
+		"name": "getvotervid",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "userCount",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"name": "usersList",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "logaddr",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "passwordReal",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "messageHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "uint8",
+				"name": "v",
+				"type": "uint8"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "r",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "s",
+				"type": "bytes32"
+			}
+		],
+		"name": "verifySignature",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "pure",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "voter",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "votercount",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+];
+			contract = new web3.eth.Contract(abi, address);
+
+			const startTime = performance.now();
+			async function getKeys() {
+				const storedKeys = JSON.parse(localStorage.getItem('paillierKeys'));
+
+				// Convert string values back to BigInts
+				storedKeys.publicKey = new paillierBigint.PublicKey(
+					BigInt(storedKeys.publicKey.n),
+					BigInt(storedKeys.publicKey.g)
+				);
+
+				storedKeys.privateKey = new paillierBigint.PrivateKey(
+					BigInt(storedKeys.privateKey.lambda),
+					BigInt(storedKeys.privateKey.mu),
+					storedKeys.publicKey,
+					BigInt(storedKeys.privateKey.p),
+					BigInt(storedKeys.privateKey.q)
+				);
+				//console.log('Public key:', storedKeys.publicKey);
+				//console.log('Private key:', storedKeys.privateKey);
+				return storedKeys;
+			}
+
+			var bigintvotefor;
+			var bigintcondition;
+			var bigintvotefor_;
+
+			var sumballot;
+			var sum1;
+			var sum1str;
+			var bigintsum1
+			var sum2;
+
+			var suminvalidballot;
+			var sumsuminvalidballotstr;
+			var suminvalid1 = 0;
+			var suminvalid2 = 0;
+
+			var sumvalidballot;
+			var sumvalid1;
+			var sumvalid2;
+
+			async function executeCount(_i) {
+
+				// Load or generate keys
+				const { publicKey, privateKey } = await getKeys();
+
+				contract.methods.votercount().call().then(function (votercount) {
+					sumballot = votercount;
+					console.log("sumballot: ", sumballot);
+					$('#totalballot').html(sumballot);
+				})
+				contract.methods.getvotefor(_i).call().then(function (votefor) {
+					//console.log("_i: ", _i);
+					bigintvotefor = BigInt(votefor);
+
+					if (_i == 1) {
+						sum1 = 0;
+						bigintsum1 = publicKey.encrypt(sum1);
+						sum1 = publicKey.addition(bigintsum1, bigintvotefor);
+
+					}
+					else {
+						sum1 = publicKey.addition(sum1, bigintvotefor);
+					}
+
+					sum1str = privateKey.decrypt(sum1).toString();
+					//console.log("sum1: ", sum1str);
+					sum2 = sumballot - sum1str;
+					$('#totalcat').html(sum2);
+
+					$('#totaldog').html(sum1str);
+				})
+				contract.methods.getcondition(_i).call().then(function (condition) {
+					bigintcondition = BigInt(condition);
+					if (_i == 1) {
+						suminvalidballot = 0;
+						bigintsuminvalidballot = publicKey.encrypt(suminvalidballot);
+						suminvalidballot = publicKey.addition(bigintsuminvalidballot, bigintcondition);
+					}
+					else {
+						suminvalidballot = publicKey.addition(suminvalidballot, bigintcondition);
+					}
+					sumsuminvalidballotstr = privateKey.decrypt(suminvalidballot).toString();
+					$('#invalidballot').html(sumsuminvalidballotstr);
+
+					//console.log("votefor: ", votefor);
+
+					//console.log("bigintvotefor: ", bigintvotefor);
+
+					const decryptedcondition = privateKey.decrypt(bigintcondition).toString();
+					//console.log("decryptedvotefor: ", decryptedcondition);
+
+					if (decryptedcondition == 1) {
+						contract.methods.getvotefor(_i).call().then(function (_votefor) {
+							bigintvotefor_ = BigInt(_votefor);
+							const decryptedvotefor = privateKey.decrypt(bigintvotefor_).toString();
+
+							if (decryptedvotefor == 0) {
+								suminvalid1++;
+								$('#invalidcat').html(suminvalid1);
+								sumvalid1 = sum1str - suminvalid1;
+								$('#validcat').html(sumvalid1);
+							}
+							else {
+								suminvalid2++;
+								$('#invaliddog').html(suminvalid2);
+								sumvalid2 = sum2 - suminvalid2;
+								$('#validdog').html(sumvalid2);
+							}
+						})
+					}
+					sumvalidballot = sumballot - sumsuminvalidballotstr;
+					$('#validballot').html(sumvalidballot);
+				})
+			}
+			contract.methods.votercount().call().then(function (votercount) {
+				for (let i = 1; i <= votercount; i++) {
+					executeCount(i);
+				}
+			})
+			const endTime = performance.now();const encryptionTime = endTime - startTime;console.log(`time: `, encryptionTime);
+		})
+	</script>
+</body>
+
+</html>
